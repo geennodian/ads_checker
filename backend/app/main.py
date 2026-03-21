@@ -2,9 +2,12 @@
 
 from datetime import date, timedelta
 
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
+from app.auth import verify_password, is_valid_token
+from app.config import settings
 from app.db import get_cursor, check_connection
 from app.logger import get_logger
 from app.mock_data import mock_summary, mock_daily, mock_campaigns, mock_creatives
@@ -42,6 +45,38 @@ def _default_dates(start: date | None, end: date | None) -> tuple[date, date]:
     return start, end
 
 
+def _check_auth(authorization: str | None) -> None:
+    """Raise 401 if auth is enabled and token is invalid."""
+    if not settings.dashboard_password:
+        return  # Auth disabled
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    token = authorization[7:]
+    if not is_valid_token(token):
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+
+class LoginRequest(BaseModel):
+    password: str
+
+
+# ---------- Auth ----------
+
+@app.post("/api/login")
+def login(body: LoginRequest):
+    if not settings.dashboard_password:
+        return {"token": "", "auth_required": False}
+    token = verify_password(body.password)
+    if not token:
+        raise HTTPException(status_code=401, detail="Incorrect password")
+    return {"token": token, "auth_required": True}
+
+
+@app.get("/api/auth-status")
+def auth_status():
+    return {"auth_required": bool(settings.dashboard_password)}
+
+
 # ---------- Health ----------
 
 @app.get("/health")
@@ -55,7 +90,9 @@ def health():
 def get_summary(
     start: date | None = Query(None),
     end: date | None = Query(None),
+    authorization: str | None = Header(None),
 ):
+    _check_auth(authorization)
     start, end = _default_dates(start, end)
     if _use_mock():
         return mock_summary(start, end)
@@ -121,7 +158,9 @@ def get_summary(
 def get_daily_trend(
     start: date | None = Query(None),
     end: date | None = Query(None),
+    authorization: str | None = Header(None),
 ):
+    _check_auth(authorization)
     start, end = _default_dates(start, end)
     if _use_mock():
         return mock_daily(start, end)
@@ -164,7 +203,9 @@ def get_campaigns(
     end: date | None = Query(None),
     sort: str = Query("cost"),
     order: str = Query("desc"),
+    authorization: str | None = Header(None),
 ):
+    _check_auth(authorization)
     start, end = _default_dates(start, end)
     if _use_mock():
         return mock_campaigns(start, end)
@@ -210,7 +251,9 @@ def get_creatives(
     start: date | None = Query(None),
     end: date | None = Query(None),
     campaign_id: str | None = Query(None),
+    authorization: str | None = Header(None),
 ):
+    _check_auth(authorization)
     start, end = _default_dates(start, end)
     if _use_mock():
         return mock_creatives(start, end, campaign_id)

@@ -16,6 +16,7 @@ class Settings:
     database_url: str = os.getenv("DATABASE_URL", "")
     app_env: str = os.getenv("APP_ENV", "local")
     log_level: str = os.getenv("LOG_LEVEL", "INFO")
+    dashboard_password: str = os.getenv("DASHBOARD_PASSWORD", "")
 
 
 settings = Settings()
