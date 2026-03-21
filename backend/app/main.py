@@ -7,8 +7,22 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import get_cursor, check_connection
 from app.logger import get_logger
+from app.mock_data import mock_summary, mock_daily, mock_campaigns, mock_creatives
 
 logger = get_logger(__name__)
+
+
+_db_available: bool | None = None
+
+
+def _use_mock() -> bool:
+    """Return True when DB is unreachable (demo/dev fallback)."""
+    global _db_available
+    if _db_available is None:
+        _db_available = check_connection()
+        if not _db_available:
+            logger.warning("DB unavailable — serving mock data for demo.")
+    return not _db_available
 
 app = FastAPI(title="Ads Checker API", version="0.1.0")
 
@@ -43,6 +57,8 @@ def get_summary(
     end: date | None = Query(None),
 ):
     start, end = _default_dates(start, end)
+    if _use_mock():
+        return mock_summary(start, end)
     with get_cursor(commit=False) as cur:
         # KPI totals
         cur.execute(
@@ -107,6 +123,8 @@ def get_daily_trend(
     end: date | None = Query(None),
 ):
     start, end = _default_dates(start, end)
+    if _use_mock():
+        return mock_daily(start, end)
     with get_cursor(commit=False) as cur:
         cur.execute(
             """
@@ -148,6 +166,8 @@ def get_campaigns(
     order: str = Query("desc"),
 ):
     start, end = _default_dates(start, end)
+    if _use_mock():
+        return mock_campaigns(start, end)
     allowed_sorts = {"impressions", "clicks", "cost", "conversions", "ctr", "cpc", "cvr", "cpa"}
     sort_col = sort if sort in allowed_sorts else "cost"
     order_dir = "DESC" if order.lower() == "desc" else "ASC"
@@ -192,6 +212,8 @@ def get_creatives(
     campaign_id: str | None = Query(None),
 ):
     start, end = _default_dates(start, end)
+    if _use_mock():
+        return mock_creatives(start, end, campaign_id)
     with get_cursor(commit=False) as cur:
         where = "WHERE date BETWEEN %s AND %s"
         params: list = [start, end]
