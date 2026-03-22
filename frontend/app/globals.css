@@ -340,6 +340,18 @@ tr:hover {
   border-color: var(--primary);
 }
 
+/* Chart Row (横並び) */
+.chart-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+.chart-half {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .container {
@@ -356,5 +368,9 @@ tr:hover {
 
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .chart-row {
+    flex-direction: column;
   }
 }
