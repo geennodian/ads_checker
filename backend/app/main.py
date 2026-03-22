@@ -111,10 +111,14 @@ def get_summary(
             (start, end),
         )
         totals = dict(cur.fetchone())
-        imp = totals["impressions"]
-        clk = totals["clicks"]
+        imp = int(totals["impressions"])
+        clk = int(totals["clicks"])
         cst = float(totals["cost"])
-        cvs = totals["conversions"]
+        cvs = int(totals["conversions"])
+        totals["impressions"] = imp
+        totals["clicks"] = clk
+        totals["cost"] = cst
+        totals["conversions"] = cvs
         totals["ctr"] = clk / imp if imp > 0 else 0
         totals["cpc"] = cst / clk if clk > 0 else 0
         totals["cvr"] = cvs / clk if clk > 0 else 0
@@ -138,7 +142,10 @@ def get_summary(
         for row in cur.fetchall():
             r = dict(row)
             r["date"] = r["date"].isoformat()
+            r["impressions"] = int(r["impressions"])
+            r["clicks"] = int(r["clicks"])
             r["cost"] = float(r["cost"])
+            r["conversions"] = int(r["conversions"])
             imp = r["impressions"]
             clk = r["clicks"]
             cst = r["cost"]
@@ -182,7 +189,10 @@ def get_daily_trend(
         for row in cur.fetchall():
             r = dict(row)
             r["date"] = r["date"].isoformat()
+            r["impressions"] = int(r["impressions"])
+            r["clicks"] = int(r["clicks"])
             r["cost"] = float(r["cost"])
+            r["conversions"] = int(r["conversions"])
             imp = r["impressions"]
             clk = r["clicks"]
             cst = r["cost"]
@@ -231,7 +241,10 @@ def get_campaigns(
         rows = []
         for row in cur.fetchall():
             r = dict(row)
+            r["impressions"] = int(r["impressions"])
+            r["clicks"] = int(r["clicks"])
             r["cost"] = float(r["cost"])
+            r["conversions"] = int(r["conversions"])
             imp = r["impressions"]
             clk = r["clicks"]
             cst = r["cost"]
@@ -282,7 +295,10 @@ def get_creatives(
         rows = []
         for row in cur.fetchall():
             r = dict(row)
+            r["impressions"] = int(r["impressions"])
+            r["clicks"] = int(r["clicks"])
             r["cost"] = float(r["cost"])
+            r["conversions"] = int(r["conversions"])
             imp = r["impressions"]
             clk = r["clicks"]
             cst = r["cost"]
